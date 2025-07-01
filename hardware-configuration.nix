@@ -25,7 +25,7 @@
   };
   swapDevices = [{ device = "/dev/disk/by-label/swap"; }];
 
-  boot.initrd.kernelModules = [ "dm-snapshot" "cryptd" ];
+  boot.initrd.kernelModules = [ "dm-snapshot" "cryptd" "dm_mod" ];
   boot.kernelModules = [ "kvm-intel" ]; # Or "kvm-amd" if your host is AMD
   boot.extraModulePackages = [ ];
   boot.initrd.luks.devices."cryptroot".device = "/dev/disk/by-label/LUKS";

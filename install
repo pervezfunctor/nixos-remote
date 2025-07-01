@@ -33,6 +33,8 @@ mkdir -p /mnt/boot
 mount -o umask=0077 "${EFI_PART}" /mnt/boot
 swapon -L /dev/mapper/nixos-swap
 
+vgscan
+vgchange -ay
 lsblk -o name,type,mountpoints /dev/vda
 
 echo "--> Installing NixOS from flake"
