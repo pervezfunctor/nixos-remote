@@ -1,48 +1,51 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DISK="/dev/vda"
-HOSTNAME="ilm"
-GIT_REPO_URL="https://github.com/pervezfunctor/nixos-remote.git" # Replace thi
+DISK=${1:-/dev/vda}
+HOSTNAME=${2:-"ilm"}
+GIT_REPO_URL="https://github.com/pervezfunctor/nixos-remote.git"
 FLAKE_OUTPUT="ilm"
 
-# --- Partitioning ---
-# Use labels for human readability when inspecting, but we won't rely on them for setup.
 sgdisk --zap-all "${DISK}"
 sgdisk -n 1:0:+1G -t 1:ef00 -c 1:efiboot "${DISK}"
 sgdisk -n 2:0:0 -t 2:8309 -c 2:cryptroot "${DISK}"
 sync && udevadm settle
 
-# DEFINE PARTITIONS BY THEIR DIRECT KERNEL NAME
 EFI_PART="${DISK}1"
 LUKS_PART="${DISK}2"
 
-# --- LUKS Setup ---
 echo "--> Setting up LUKS on ${LUKS_PART}"
-cryptsetup --label=LUKS luksFormat --type luks2 "${LUKS_PART}"
-cryptsetup open "${LUKS_PART}" cryptroot
+cryptsetup -c aes-xts-plain64 -s 512 -h sha512 -i 2000 --use-random \
+  --label=LUKS luksFormat --type luks2 "${LUKS_PART}"
+cryptsetup open --type luks "${LUKS_PART}" cryptroot
 
-# --- LVM, Formatting, Mounting (No changes here, these are correct) ---
 pvcreate /dev/mapper/cryptroot
 vgcreate nixos /dev/mapper/cryptroot
 lvcreate -L 4G -n swap nixos
 lvcreate -l '100%FREE' -n root nixos
-mkfs.vfat -n BOOT "${EFI_PART}"
+
+mkfs.vfat -n BOOT -F32 "${EFI_PART}"
 mkfs.ext4 -L root /dev/mapper/nixos-root
 mkswap -L swap /dev/mapper/nixos-swap
+
 mount /dev/mapper/nixos-root /mnt
 mkdir -p /mnt/boot
-mount "${EFI_PART}" /mnt/boot
-swapon /dev/mapper/nixos-swap
+mount -o umask=0077 "${EFI_PART}" /mnt/boot
+swapon -L /dev/mapper/nixos-swap
 
-# --- NixOS Configuration and Installation ---
+lsblk -o name,type,mountpoints /dev/vda
+
 echo "--> Installing NixOS from flake"
 git clone ${GIT_REPO_URL} /mnt/etc/nixos
 mkdir -p /mnt/etc/ssh
 ssh-keygen -t ed25519 -f /mnt/etc/ssh/ssh_host_ed25519_key -N ""
 chmod 600 /mnt/etc/ssh/ssh_host_ed25519_key
-nixos-install --flake "/mnt/etc/nixos#${FLAKE_OUTPUT}" --no-root-passwd
+nixos-install --root /mnt --no-root-passwd --flake "/mnt/etc/nixos#${FLAKE_OUTPUT}"
 nixos-enter --root /mnt -c 'passwd pervez'
+
 echo "--- Installation Complete ---"
 umount -R /mnt
+swapoff -L swap
+vgchange -a n nixos
+cryptsetup close /dev/mapper/cryptroot
 echo "--- You can now reboot. ---"

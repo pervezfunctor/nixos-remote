@@ -14,9 +14,10 @@
   #   useOSProber = false;
   # };
 
-  boot.initrd.network.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.systemd-boot.enable = true;
+  boot.initrd.network.enable = true;
+  networking.hostName = "ilm";
 
   boot.initrd.network.ssh = {
     enable = true;
@@ -24,8 +25,6 @@
     hostKeys = [ "/etc/ssh/ssh_host_ed25519_key" ];
   };
 
-  networking.hostName = "ilm";
-  networking.useDHCP = true;
   time.timeZone = "Etc/UTC";
   i18n.defaultLocale = "en_US.UTF-8";
 
