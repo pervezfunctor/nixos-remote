@@ -31,7 +31,7 @@ mkswap -L swap /dev/mapper/nixos-swap
 mount /dev/mapper/nixos-root /mnt
 mkdir -p /mnt/boot
 mount -o umask=0077 "${EFI_PART}" /mnt/boot
-swapon -L /dev/mapper/nixos-swap
+swapon /dev/mapper/nixos-swap
 
 vgscan
 vgchange -ay
@@ -47,7 +47,7 @@ nixos-enter --root /mnt -c 'passwd pervez'
 
 echo "--- Installation Complete ---"
 umount -R /mnt
-swapoff -L swap
+swapoff /dev/mapper/nixos-swap
 vgchange -a n nixos
 cryptsetup close /dev/mapper/cryptroot
 echo "--- You can now reboot. ---"

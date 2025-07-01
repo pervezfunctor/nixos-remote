@@ -11,6 +11,8 @@
     "rtsx_pci_sdmmc"
     "usb_storage"
     "sd_mod"
+    "sr_mod"
+    "virtio_pci"
     "virtio_blk"
   ];
 
