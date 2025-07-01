@@ -5,25 +5,18 @@
   imports = [ ./hardware-configuration.nix ];
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nixpkgs.config.allowUnfree = true;
 
-  fileSystems."/" = {
-    device = "/dev/mapper/nixos-root";
-    fsType = "ext4";
-  };
-  fileSystems."/boot" = {
-    device = "/dev/disk/by-label/BOOT";
-    fsType = "vfat";
-  };
-  swapDevices = [{ device = "/dev/mapper/nixos-swap"; }];
-
-  boot.loader.grub = {
-    enable = true;
-    device = "nodev";
-    efiSupport = true;
-    useOSProber = false;
-  };
+  # boot.loader.grub = {
+  #   enable = true;
+  #   device = "nodev";
+  #   efiSupport = true;
+  #   useOSProber = false;
+  # };
 
   boot.initrd.network.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
+  boot.loader.systemd-boot.enable = true;
 
   boot.initrd.network.ssh = {
     enable = true;
@@ -36,14 +29,15 @@
     preLVM = true;
   };
 
-  networking.hostName = "nixos-remote";
+  networking.hostName = "ilm";
   networking.useDHCP = true;
   time.timeZone = "Etc/UTC";
   i18n.defaultLocale = "en_US.UTF-8";
 
   users.users.pervez = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ];
+    createHome = true;
+    extraGroups = [ "wheel" "networkmanager" ];
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIcXIDK5n+AIXExMo9nt1PRGcowyvyZUPvhBGRJRGMAl pervez@fedora"
     ];

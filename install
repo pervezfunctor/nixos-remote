@@ -2,7 +2,7 @@
 set -euo pipefail
 
 DISK="/dev/vda"
-HOSTNAME="nixos-remote"
+HOSTNAME="ilm"
 GIT_REPO_URL="https://github.com/pervezfunctor/nixos-remote.git" # Replace thi
 FLAKE_OUTPUT="ilm"
 
@@ -23,7 +23,7 @@ LUKS_PART="${DISK}2"
 
 # --- LUKS Setup ---
 echo "--> Setting up LUKS on ${LUKS_PART}"
-cryptsetup luksFormat --type luks2 "${LUKS_PART}"
+cryptsetup --label=LUKS luksFormat --type luks2 "${LUKS_PART}"
 cryptsetup open "${LUKS_PART}" cryptroot
 
 # --- LVM, Formatting, Mounting (No changes here, these are correct) ---
@@ -46,7 +46,7 @@ mkdir -p /mnt/etc/ssh
 ssh-keygen -t ed25519 -f /mnt/etc/ssh/ssh_host_ed25519_key -N ""
 chmod 600 /mnt/etc/ssh/ssh_host_ed25519_key
 nixos-install --flake "/mnt/etc/nixos#${FLAKE_OUTPUT}" --no-root-passwd
-
+nixos-enter --root /mnt -c 'passwd pervez'
 echo "--- Installation Complete ---"
 umount -R /mnt
 echo "--- You can now reboot. ---"
