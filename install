@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DISK="/dev/vda"
+
+HOSTNAME="nixos-remote"
+
+GIT_REPO_URL="https://github.com/pervezfunctor/nixos-remote.git"
+
+# Set the flake output to install.
+# This corresponds to `nixosConfigurations.<name>` in your flake.nix.
+FLAKE_OUTPUT="nixos-remote-unlock"
+
+# Size for the SWAP partition.
+SWAP_SIZE="4G"
+
+if [ "$EUID" -ne 0 ]; then
+  echo "This script must be run as root."
+  exit 1
+fi
+
+if ! [ -b "$DISK" ]; then
+  echo "Disk ${DISK} not found."
+  exit 1
+fi
+
+echo "--> Partitioning disk ${DISK}..."
+# GPT partition table
+# 1: 1GB EFI partition
+# 2: Rest of the disk for LUKS
+sgdisk --zap-all "${DISK}"
+sgdisk -n 1:0:+1G -t 1:ef00 -c 1:efiboot "${DISK}"
+sgdisk -n 2:0:0 -t 2:8309 -c 2:cryptroot "${DISK}"
+sync
+
+udevadm settle
+
+EFI_PART=$(lsblk -pno NAME "${DISK}" | sed -n 2p)
+LUKS_PART=$(lsblk -pno NAME "${DISK}" | sed -n 3p)
+
+echo "--> Setting up LUKS encryption on ${LUKS_PART}..."
+cryptsetup luksFormat --type luks2 -q "${LUKS_PART}"
+cryptsetup open "${LUKS_PART}" cryptroot
+
+echo "--> Setting up LVM on top of LUKS..."
+pvcreate /dev/mapper/cryptroot
+vgcreate nixos /dev/mapper/cryptroot
+lvcreate -L "${SWAP_SIZE}" -n swap nixos
+lvcreate -l '100%FREE' -n root nixos
+
+echo "--> Formatting filesystems..."
+mkfs.vfat -n BOOT "${EFI_PART}"
+mkfs.ext4 -L root /dev/mapper/nixos-root
+mkswap -L swap /dev/mapper/nixos-swap
+
+echo "--> Mounting filesystems..."
+mount /dev/mapper/nixos-root /mnt
+mkdir -p /mnt/boot
+mount "${EFI_PART}" /mnt/boot
+swapon /dev/mapper/nixos-swap
+
+echo "--> Cloning NixOS configuration from ${GIT_REPO_URL}..."
+nix-shell -p nixFlakes git --command "git clone ${GIT_REPO_URL} /mnt/etc/nixos"
+
+echo "--> Populating hardware configuration with UUIDs..."
+EFI_UUID=$(blkid -s UUID -o value "${EFI_PART}")
+LUKS_UUID=$(blkid -s UUID -o value "${LUKS_PART}")
+
+# Use sed to replace the placeholders in the hardware configuration files
+sed -i "s/EFI_PARTITION_UUID_PLACEHOLDER/${EFI_UUID}/" /mnt/etc/nixos/hardware-configuration.nix
+sed -i "s/LUKS_PARTITION_UUID_PLACEHOLDER/${LUKS_UUID}/" /mnt/etc/nixos/configuration.nix
+sed -i "s/nixos-remote/${HOSTNAME}/" /mnt/etc/nixos/configuration.nix
+
+echo "--> Installing NixOS..."
+nixos-install --flake "/mnt/etc/nixos#${FLAKE_OUTPUT}" --no-root-passwd
+
+echo "--> Installation complete!"
+echo "Unmounting filesystems..."
+umount -R /mnt
+
+echo "You can now reboot the system."
+echo "After rebooting, the system will wait for you to unlock it."
+echo "Find its IP address from your DHCP server and run:"
+echo "ssh -o 'UserKnownHostsFile=/dev/null' root@<ip_address>"
+echo "Then enter your LUKS passphrase when prompted."
