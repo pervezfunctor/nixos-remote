@@ -24,8 +24,20 @@
       hostKeys = [ "/etc/ssh/ssh_host_ed25519_key" ];
     };
 
-    luks.devices."cryptroot" = {
-      device = "/dev/disk/by-label/root";
+    fileSystems."/" = {
+      device = "/dev/mapper/nixos-root";
+      fsType = "ext4";
+    };
+
+    fileSystems."/boot" = {
+      device = "/dev/disk/by-label/BOOT";
+      fsType = "vfat";
+    };
+
+    swapDevices = [{ device = "/dev/mapper/nixos-swap"; }];
+
+    boot.initrd.luks.devices."cryptroot" = {
+      device = "/dev/disk/by-partlabel/cryptroot";
       preLVM = true;
     };
   };
