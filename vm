@@ -1,6 +1,6 @@
 #! /bin/bash
 
-qemu-img create -f qcow2 nixos-test.qcow2 20G
+sudo qemu-img create -f qcow2 /var/lib/libvirt/images/nixos-test.qcow2 20G
 
 virt-install \
   --name nixvm \
