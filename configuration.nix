@@ -32,7 +32,7 @@
   };
 
   boot.initrd.luks.devices."cryptroot" = {
-    device = "/dev/disk/by-partlabel/cryptroot";
+    device = "/dev/vda2";
     preLVM = true;
   };
 

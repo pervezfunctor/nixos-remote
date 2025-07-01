@@ -1,82 +1,52 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ $# -ne 1 ]; then
-  echo "Usage: $0 DISK"
-  exit 1
-fi
-
-DISK="$1" # eg: "/dev/vda"
-
+DISK="/dev/vda"
 HOSTNAME="nixos-remote"
-GIT_REPO_URL="https://github.com/pervezfunctor/nixos-remote.git"
-FLAKE_REPO="https://github.com/pervezfunctor/nixos-remote"
-MOUNTPOINT="/mnt"
+GIT_REPO_URL="https://github.com/pervezfunctor/nixos-remote-unlock.git" # Replace thi
 FLAKE_OUTPUT="nixos-remote-unlock"
-SWAP_SIZE="4G"
 
-if [ "$EUID" -ne 0 ]; then
-  echo "This script must be run as root."
-  exit 1
-fi
+# --- SCRIPT LOGIC ---
+echo "--- WARNING: Wiping ${DISK} in 10 seconds. ---"
+sleep 10
 
-if ! [ -b "$DISK" ]; then
-  echo "Disk ${DISK} not found."
-  exit 1
-fi
-
-echo "--> Partitioning disk ${DISK}..."
+# --- Partitioning ---
+# Use labels for human readability when inspecting, but we won't rely on them for setup.
 sgdisk --zap-all "${DISK}"
 sgdisk -n 1:0:+1G -t 1:ef00 -c 1:efiboot "${DISK}"
-sgdisk -n 2:0:0 -t 2:8309 -c 2:cryptroot "${DISK}" # GPT partition label
-sync
+sgdisk -n 2:0:0 -t 2:8309 -c 2:cryptroot "${DISK}"
+sync && udevadm settle
 
-echo "--> Waiting for partitions to appear..."
-partprobe "${DISK}"
-sleep 2 # Give udev a moment to create the links
+# DEFINE PARTITIONS BY THEIR DIRECT KERNEL NAME
+EFI_PART="${DISK}1"
+LUKS_PART="${DISK}2"
 
-EFI_PART="/dev/disk/by-partlabel/efiboot"
-LUKS_PART="/dev/disk/by-partlabel/cryptroot"
-
-while [ ! -e "${LUKS_PART}" ]; do
-  echo "Waiting for ${LUKS_PART} to be created..."
-  sleep 1
-done
-
-echo "--> Setting up LUKS encryption on ${LUKS_PART}..."
-cryptsetup luksFormat --type luks2 -q "${LUKS_PART}"
+# --- LUKS Setup ---
+echo "--> Setting up LUKS on ${LUKS_PART}"
+cryptsetup luksFormat --type luks2 "${LUKS_PART}"
 cryptsetup open "${LUKS_PART}" cryptroot
 
-echo "--> Setting up LVM on top of LUKS..."
+# --- LVM, Formatting, Mounting (No changes here, these are correct) ---
 pvcreate /dev/mapper/cryptroot
 vgcreate nixos /dev/mapper/cryptroot
-lvcreate -L "${SWAP_SIZE}" -n swap nixos
+lvcreate -L 4G -n swap nixos
 lvcreate -l '100%FREE' -n root nixos
-
-echo "--> Formatting filesystems with labels..."
 mkfs.vfat -n BOOT "${EFI_PART}"
 mkfs.ext4 -L root /dev/mapper/nixos-root
 mkswap -L swap /dev/mapper/nixos-swap
+mount /dev/mapper/nixos-root /mnt
+mkdir -p /mnt/boot
+mount "${EFI_PART}" /mnt/boot
+swapon /dev/mapper/nixos-swap
 
-echo "--> Mounting filesystems..."
-mount /dev/disk/by-label/root ${MOUNTPOINT:-/mnt}
-mkdir -p ${MOUNTPOINT:-/mnt}/boot
-mount /dev/disk/by-label/BOOT ${MOUNTPOINT:-/mnt}/boot
-swapon /dev/disk/by-label/swap
-
-echo "--> Cloning NixOS configuration from ${GIT_REPO_URL}..."
-git clone "$FLAKE_REPO" "$MOUNTPOINT/etc/nixos"
-
-echo "--> Pre-generating SSH host key for the new system..."
+# --- NixOS Configuration and Installation ---
+echo "--> Installing NixOS from flake"
+git clone ${GIT_REPO_URL} /mnt/etc/nixos
 mkdir -p /mnt/etc/ssh
 ssh-keygen -t ed25519 -f /mnt/etc/ssh/ssh_host_ed25519_key -N ""
 chmod 600 /mnt/etc/ssh/ssh_host_ed25519_key
-echo "--> SSH host key generated."
+nixos-install --flake "/mnt/etc/nixos#${FLAKE_OUTPUT}" --no-root-passwd
 
-echo "--> Installing NixOS..."
-nixos-install --flake "${MOUNTPOINT:-/mnt}/etc/nixos#${FLAKE_OUTPUT}" --no-root-passwd
-
-echo "--> Installation complete! Unmounting filesystems..."
-umount -R ${MOUNTPOINT:-/mnt}
-
-echo "You can now reboot. Unlock with: ssh root@<ip_address>"
+echo "--- Installation Complete ---"
+umount -R /mnt
+echo "--- You can now reboot. ---"
