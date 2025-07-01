@@ -36,7 +36,7 @@
 
     swapDevices = [{ device = "/dev/mapper/nixos-swap"; }];
 
-    boot.initrd.luks.devices."cryptroot" = {
+    luks.devices."cryptroot" = {
       device = "/dev/disk/by-partlabel/cryptroot";
       preLVM = true;
     };
