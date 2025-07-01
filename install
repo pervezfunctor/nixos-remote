@@ -6,10 +6,6 @@ HOSTNAME="ilm"
 GIT_REPO_URL="https://github.com/pervezfunctor/nixos-remote.git" # Replace thi
 FLAKE_OUTPUT="ilm"
 
-# --- SCRIPT LOGIC ---
-echo "--- WARNING: Wiping ${DISK} in 10 seconds. ---"
-sleep 10
-
 # --- Partitioning ---
 # Use labels for human readability when inspecting, but we won't rely on them for setup.
 sgdisk --zap-all "${DISK}"

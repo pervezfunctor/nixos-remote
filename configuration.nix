@@ -24,11 +24,6 @@
     hostKeys = [ "/etc/ssh/ssh_host_ed25519_key" ];
   };
 
-  boot.initrd.luks.devices."cryptroot" = {
-    device = "/dev/vda2";
-    preLVM = true;
-  };
-
   networking.hostName = "ilm";
   networking.useDHCP = true;
   time.timeZone = "Etc/UTC";
@@ -52,6 +47,9 @@
     };
   };
 
-  environment.systemPackages = with pkgs; [ vim git wget zsh neovim curl tmux ];
+  environment.systemPackages = with pkgs; [ vim git wget ];
   system.stateVersion = "25.05";
 }
+
+# ⚠️ Mount point '/boot' which backs the random seed file is world accessible, which is a security hole! ⚠️
+# ⚠️ Random seed file '/boot/loader/.#bootctlrandom-seed9da23eb2cb97ee03' is world accessible, which is a security hole! ⚠️
