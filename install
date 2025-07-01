@@ -71,7 +71,7 @@ mount /dev/disk/by-label/BOOT /mnt/boot
 swapon /dev/disk/by-label/swap
 
 echo "--> Cloning NixOS configuration from ${GIT_REPO_URL}..."
-nix-shell -p nixFlakes git --command "git clone ${GIT_REPO_URL} /mnt/etc/nixos"
+git clone "$FLAKE_REPO" "$MOUNTPOINT/etc/nixos"
 
 sed -i "s/nixos-server/${HOSTNAME}/" /mnt/etc/nixos/configuration.nix
 

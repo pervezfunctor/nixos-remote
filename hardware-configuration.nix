@@ -17,14 +17,14 @@
   };
 
   fileSystems."/boot" = {
-    device = "/dev/disk/by-uuid/EFI_PARTITION_UUID_PLACEHOLDER";
+    device = "/dev/disk/by-partlabel/efiboot";
     fsType = "vfat";
   };
 
   swapDevices = [{ device = "/dev/mapper/nixos-swap"; }];
 
   # Enables booting from an EFI system partition.
-  boot.loader.systemd-boot.enable = true;
+  # boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
