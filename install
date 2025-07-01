@@ -3,8 +3,8 @@ set -euo pipefail
 
 DISK="/dev/vda"
 HOSTNAME="nixos-remote"
-GIT_REPO_URL="https://github.com/pervezfunctor/nixos-remote-unlock.git" # Replace thi
-FLAKE_OUTPUT="nixos-remote-unlock"
+GIT_REPO_URL="https://github.com/pervezfunctor/nixos-remote.git" # Replace thi
+FLAKE_OUTPUT="ilm"
 
 # --- SCRIPT LOGIC ---
 echo "--- WARNING: Wiping ${DISK} in 10 seconds. ---"
