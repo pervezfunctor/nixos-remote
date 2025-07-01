@@ -12,7 +12,7 @@
   boot.extraModulePackages = [ ];
 
   fileSystems."/" = {
-    device = "/dev/diskt/by-label/root";
+    device = "/dev/disk/by-label/root";
     fsType = "ext4";
   };
 

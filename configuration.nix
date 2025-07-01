@@ -25,7 +25,7 @@
     };
 
     luks.devices."cryptroot" = {
-      device = "/dev/disk/by-partlabel/cryptroot";
+      device = "/dev/disk/by-label/root";
       preLVM = true;
     };
   };
