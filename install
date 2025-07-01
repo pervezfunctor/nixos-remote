@@ -5,6 +5,8 @@ set -euo pipefail
 DISK="/dev/vda" # Correct for the VM
 HOSTNAME="nixos-server"
 GIT_REPO_URL="https://github.com/pervezfunctor/nixos-remote.git"
+FLAKE_REPO="https://github.com/pervezfunctor/nixos-remote"
+MOUNTPOINT="/mnt"
 FLAKE_OUTPUT="nixos-remote-unlock"
 SWAP_SIZE="4G"
 
@@ -65,20 +67,29 @@ mkfs.ext4 -L root /dev/mapper/nixos-root
 mkswap -L swap /dev/mapper/nixos-swap
 
 echo "--> Mounting filesystems..."
-mount /dev/disk/by-label/root /mnt
-mkdir -p /mnt/boot
-mount /dev/disk/by-label/BOOT /mnt/boot
+mount /dev/disk/by-label/root ${MOUNTPOINT:-/mnt}
+mkdir -p ${MOUNTPOINT:-/mnt}/boot
+mount /dev/disk/by-label/BOOT ${MOUNTPOINT:-/mnt}/boot
 swapon /dev/disk/by-label/swap
 
 echo "--> Cloning NixOS configuration from ${GIT_REPO_URL}..."
 git clone "$FLAKE_REPO" "$MOUNTPOINT/etc/nixos"
 
-sed -i "s/nixos-server/${HOSTNAME}/" /mnt/etc/nixos/configuration.nix
+sed -i "s/nixos-server/${HOSTNAME}/" ${MOUNTPOINT:-/mnt}/etc/nixos/configuration.nix
+
+echo "--> Pre-generating SSH host key for the new system..."
+mkdir -p /mnt/etc/ssh
+# Generate just the ed25519 key, as it's what our config needs.
+# -N "" specifies an empty passphrase.
+ssh-keygen -t ed25519 -f /mnt/etc/ssh/ssh_host_ed25519_key -N ""
+# Ensure correct permissions for the key
+chmod 600 /mnt/etc/ssh/ssh_host_ed25519_key
+echo "--> SSH host key generated."
 
 echo "--> Installing NixOS..."
-nixos-install --flake "/mnt/etc/nixos#${FLAKE_OUTPUT}" --no-root-passwd
+nixos-install --flake "${MOUNTPOINT:-/mnt}/etc/nixos#${FLAKE_OUTPUT}" --no-root-passwd
 
 echo "--> Installation complete! Unmounting filesystems..."
-umount -R /mnt
+umount -R ${MOUNTPOINT:-/mnt}
 
 echo "You can now reboot. Unlock with: ssh root@<ip_address>"

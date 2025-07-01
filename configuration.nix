@@ -29,7 +29,7 @@
 
     luks.devices."cryptroot" = {
       # The script will replace this placeholder with the actual LUKS partition UUID
-      device = "/dev/disk/by-uuid/LUKS_PARTITION_UUID_PLACEHOLDER";
+      device = "/dev/disk/by-label/cryptroot";
       # This tells NixOS that this device is unlocked early in the boot process.
       preLVM = true;
     };
