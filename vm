@@ -1,0 +1,14 @@
+#! /bin/bash
+
+qemu-img create -f qcow2 nixos-test.qcow2 20G
+
+virt-install \
+  --name nixvm \
+  --memory 8192 \
+  --vcpus 4 \
+  --disk path=/var/lib/libvirt/images/nixos-test.qcow2,format=qcow2 \
+  --cdrom /var/lib/libvirt/images/nixos-minimal-25.05.805252.b43c397f6c21-x86_64-linux.iso \
+  --network network=default \
+  --os-variant nixos-unstable \
+  --graphics spice \
+  --boot loader=/usr/share/OVMF/OVMF_CODE.fd,loader_ro=yes,loader_type=pflash,nvram_template=/usr/share/OVMF/OVMF_VARS.fd
