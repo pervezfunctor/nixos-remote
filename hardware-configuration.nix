@@ -12,16 +12,16 @@
   boot.extraModulePackages = [ ];
 
   fileSystems."/" = {
-    device = "/dev/mapper/nixos-root";
+    device = "/dev/diskt/by-label/root";
     fsType = "ext4";
   };
 
   fileSystems."/boot" = {
-    device = "/dev/disk/by-partlabel/efiboot";
+    device = "/dev/disk/by-label/BOOT";
     fsType = "vfat";
   };
 
-  swapDevices = [{ device = "/dev/mapper/nixos-swap"; }];
+  swapDevices = [{ device = "/dev/disk/by-label/swap"; }];
 
   # Enables booting from an EFI system partition.
   # boot.loader.systemd-boot.enable = true;
