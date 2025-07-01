@@ -16,6 +16,18 @@
   networking.hostName = "nixos-remote";
   networking.useDHCP = true;
 
+  fileSystems."/" = {
+    device = "/dev/mapper/nixos-root";
+    fsType = "ext4";
+  };
+
+  fileSystems."/boot" = {
+    device = "/dev/disk/by-label/BOOT";
+    fsType = "vfat";
+  };
+
+  swapDevices = [{ device = "/dev/mapper/nixos-swap"; }];
+
   boot.initrd = {
     network.enable = true;
     network.ssh = {
@@ -23,18 +35,6 @@
       authorizedKeys = config.users.users.root.openssh.authorizedKeys.keys;
       hostKeys = [ "/etc/ssh/ssh_host_ed25519_key" ];
     };
-
-    fileSystems."/" = {
-      device = "/dev/mapper/nixos-root";
-      fsType = "ext4";
-    };
-
-    fileSystems."/boot" = {
-      device = "/dev/disk/by-label/BOOT";
-      fsType = "vfat";
-    };
-
-    swapDevices = [{ device = "/dev/mapper/nixos-swap"; }];
 
     luks.devices."cryptroot" = {
       device = "/dev/disk/by-partlabel/cryptroot";
