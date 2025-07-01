@@ -1,22 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# --- USER CONFIGURATION ---
-DISK="/dev/vda" # Correct for the VM
-HOSTNAME="nixos-server"
+if [ $# -ne 1 ]; then
+  echo "Usage: $0 DISK"
+  exit 1
+fi
+
+DISK="$1" # eg: "/dev/vda"
+
+HOSTNAME="nixos-remote"
 GIT_REPO_URL="https://github.com/pervezfunctor/nixos-remote.git"
 FLAKE_REPO="https://github.com/pervezfunctor/nixos-remote"
 MOUNTPOINT="/mnt"
 FLAKE_OUTPUT="nixos-remote-unlock"
 SWAP_SIZE="4G"
-
-# --- SCRIPT LOGIC ---
-
-echo "------------------------------------------------------------------"
-echo "!! WARNING: This script will ERASE ALL DATA on ${DISK}."
-echo "You have 10 seconds to press Ctrl+C to cancel."
-echo "------------------------------------------------------------------"
-sleep 10
 
 if [ "$EUID" -ne 0 ]; then
   echo "This script must be run as root."
@@ -35,17 +32,12 @@ sgdisk -n 2:0:0 -t 2:8309 -c 2:cryptroot "${DISK}" # GPT partition label
 sync
 
 echo "--> Waiting for partitions to appear..."
-# This is a more robust way to wait. It tells the kernel to re-read the
-# partition table and then waits for the specific device link to be created.
 partprobe "${DISK}"
 sleep 2 # Give udev a moment to create the links
 
-# --- MODIFICATION ---
-# Use the partition labels directly. This is much more reliable than device names.
 EFI_PART="/dev/disk/by-partlabel/efiboot"
 LUKS_PART="/dev/disk/by-partlabel/cryptroot"
 
-# Wait until the LUKS partition actually exists before trying to use it.
 while [ ! -e "${LUKS_PART}" ]; do
   echo "Waiting for ${LUKS_PART} to be created..."
   sleep 1
@@ -75,14 +67,9 @@ swapon /dev/disk/by-label/swap
 echo "--> Cloning NixOS configuration from ${GIT_REPO_URL}..."
 git clone "$FLAKE_REPO" "$MOUNTPOINT/etc/nixos"
 
-sed -i "s/nixos-server/${HOSTNAME}/" ${MOUNTPOINT:-/mnt}/etc/nixos/configuration.nix
-
 echo "--> Pre-generating SSH host key for the new system..."
 mkdir -p /mnt/etc/ssh
-# Generate just the ed25519 key, as it's what our config needs.
-# -N "" specifies an empty passphrase.
 ssh-keygen -t ed25519 -f /mnt/etc/ssh/ssh_host_ed25519_key -N ""
-# Ensure correct permissions for the key
 chmod 600 /mnt/etc/ssh/ssh_host_ed25519_key
 echo "--> SSH host key generated."
 

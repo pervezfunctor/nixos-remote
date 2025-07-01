@@ -12,3 +12,9 @@ virt-install \
   --os-variant nixos-unstable \
   --graphics spice \
   --boot loader=/usr/share/OVMF/OVMF_CODE.fd,loader_ro=yes,loader_type=pflash,nvram_template=/usr/share/OVMF/OVMF_VARS.fd
+
+# This command sets the CD-ROM drive to be empty
+virsh change-media nixos-test-vm hda --eject --config
+
+echo "Check your ip here"
+virsh net-dhcp-leases default
