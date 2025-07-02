@@ -66,51 +66,34 @@
   };
 
   environment.systemPackages = with pkgs; [
+    openssh
     vim
     git
-    wget
     bash
+    zsh
+    wget
     curl
     coreutils
-    git
     gnugrep
-    openssh
+    gawk
+    sed
+    cut
     unzip
     xz
-    glibc
-    bat
-    carapace
-    curl
-    delta
-    emacs-nox
-    eza
-    fd
-    fzf
     gcc
-    gh
-    htop
-    just
-    lazygit
-    luarocks
+    glibc
     gnumake
+    git
+    gh
     micro-with-wl-clipboard
-    neovim
     nixfmt-classic
     nixd
-    nixpkgs-fmt
     statix
-    nushell
-    ripgrep
-    sd
     starship
     stow
     tmux
     trash-cli
     tree
-    unzip
-    wget
-    zoxide
-    zsh
   ];
   system.stateVersion = "25.05";
 }
