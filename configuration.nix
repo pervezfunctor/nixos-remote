@@ -4,25 +4,31 @@
 {
   imports = [ ./hardware-configuration.nix ];
 
+  programs.nix-ld.enable = true;
+
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
   nixpkgs.config.allowUnfree = true;
 
-  # boot.loader.grub = {
-  #   enable = true;
-  #   device = "nodev";
-  #   efiSupport = true;
-  #   useOSProber = false;
-  # };
-
   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.systemd-boot.enable = true;
-  boot.initrd.network.enable = true;
-  networking.hostName = "ilm";
+  boot.kernelParams = [ 
+    "ip=dhcp"
+  ];
 
-  boot.initrd.network.ssh = {
-    enable = true;
-    authorizedKeys = config.users.users.root.openssh.authorizedKeys.keys;
-    hostKeys = [ "/etc/ssh/ssh_host_ed25519_key" ];
+  networking.hostName = "ilm";
+  networking.interfaces.enp1s0.useDHCP = true;  
+  boot.initrd = { 
+    availableKernelModules = [ "virtio_pci" "virtio_net" "virtio_scsi" "ahci" "sd_mod" ];
+    network = {
+      enable = true; 
+      ssh = {
+        enable = true;
+        port = 2222;
+        authorizedKeys = config.users.users.root.openssh.authorizedKeys.keys;
+        hostKeys = [ "/etc/ssh/ssh_host_ed25519_key" ];
+        shell = "/bin/cryptsetup-askpass";
+      };
+    };
   };
 
   time.timeZone = "Etc/UTC";
@@ -46,7 +52,53 @@
     };
   };
 
-  environment.systemPackages = with pkgs; [ vim git wget ];
+  environment.systemPackages = with pkgs; [ 
+    vim 
+    git 
+    wget
+    bash
+    curl
+    coreutils
+    git
+    gnugrep
+    openssh
+    unzip
+    xz
+    glibc
+    bat
+    carapace
+    curl
+    delta
+    emacs-nox
+    eza
+    fd
+    fzf
+    gcc
+    gh
+    htop
+    just
+    lazygit
+    luarocks
+    gnumake
+    micro-with-wl-clipboard
+    neovim
+    nixfmt-classic
+    nixd
+    nixpkgs-fmt
+    statix
+    nushell
+    ripgrep
+    sd
+    starship
+    stow
+    tmux
+    trash-cli
+    tree
+    unzip
+    wget
+    zoxide
+    zsh
+  ];
   system.stateVersion = "25.05";
 }
 
