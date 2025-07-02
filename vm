@@ -1,20 +1,63 @@
 #! /bin/bash
 
-sudo qemu-img create -f qcow2 /var/lib/libvirt/images/nixos-test.qcow2 20G
+download_iso() {
+  if [ ! -f /var/lib/libvirt/images/nixos-minimal-25.05.iso ]; then
+    echo "Downloading NixOS ISO"
+    sudo wget https://channels.nixos.org/nixos-25.05/latest-nixos-minimal-x86_64-linux.iso -O /var/lib/libvirt/images/nixos-minimal-25.05.iso
+  else
+    echo "NixOS ISO already exists"
+  fi
 
-virt-install \
-  --name nixvm \
-  --memory 8192 \
-  --vcpus 4 \
-  --disk path=/var/lib/libvirt/images/nixos-test.qcow2,format=qcow2 \
-  --cdrom /var/lib/libvirt/images/nixos-minimal-25.05.805252.b43c397f6c21-x86_64-linux.iso \
-  --network network=default \
-  --os-variant nixos-unstable \
-  --graphics spice \
-  --boot loader=/usr/share/OVMF/OVMF_CODE.fd,loader_ro=yes,loader_type=pflash,nvram_template=/usr/share/OVMF/OVMF_VARS.fd
+}
 
-# This command sets the CD-ROM drive to be empty
-virsh change-media nixos-test-vm hda --eject --config
+create_disk() {
+  if [ ! -f /var/lib/libvirt/images/nixvm.qcow2 ]; then
+    echo "Creating VM disk"
+    sudo qemu-img create -f qcow2 /var/lib/libvirt/images/nixvm.qcow2 20G
+  else
+    echo "VM disk already exists"
+  fi
 
-echo "Check your ip here"
-virsh net-dhcp-leases default
+}
+
+create_vm() {
+  if virsh list --all | grep -q nixvm; then
+    echo "VM already exists"
+    return 0
+  fi
+
+  echo "Creating VM"
+  virt-install \
+    --name nixvm \
+    --memory 8192 \
+    --vcpus 4 \
+    --disk path=/var/lib/libvirt/images/nixvm.qcow2,format=qcow2 \
+    --cdrom /var/lib/libvirt/images/nixos-minimal-25.05.iso \
+    --network network=default \
+    --os-variant nixos-unstable \
+    --graphics spice \
+    --boot uefi
+  # --boot loader=/usr/share/OVMF/OVMF_CODE.fd,loader_ro=yes,loader_type=pflash,nvram_template=/usr/share/OVMF/OVMF_VARS.fd
+}
+
+eject_iso() {
+  virsh change-media nixvm hda --eject --config
+}
+
+get_ip() {
+  virsh net-dhcp-leases default | grep nixvm | awk '{print $5}' | cut -d/ -f1
+}
+
+main() {
+
+  download_iso
+  create_disk
+  create_vm
+  eject_iso
+
+  echo "VM created. You can now ssh to it with the following command:"
+  echo "ssh root@$(get_ip)"
+
+}
+
+main

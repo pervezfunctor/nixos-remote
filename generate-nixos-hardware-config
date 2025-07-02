@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "--> Generating NixOS configuration"
+mkdir -p temp
+nixos-generate-config --root temp
