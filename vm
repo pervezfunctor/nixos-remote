@@ -20,6 +20,53 @@ create_disk() {
 
 }
 
+get_uefi_paths() {
+  local code vars
+  if [[ -e /etc/os-release ]]; then
+    # shellcheck disable=SC1091
+    . /etc/os-release
+
+    case "$ID" in
+    fedora | rhel)
+      code="/usr/share/edk2/ovmf/OVMF_CODE.fd"
+      vars="/usr/share/edk2/ovmf/OVMF_VARS.fd"
+      ;;
+    ubuntu | debian)
+      code="/usr/share/OVMF/OVMF_CODE.fd"
+      vars="/usr/share/OVMF/OVMF_VARS.fd"
+      ;;
+    arch)
+      code="/usr/share/edk2-ovmf/x64/OVMF_CODE.fd"
+      vars="/usr/share/edk2-ovmf/x64/OVMF_VARS.fd"
+      ;;
+    opensuse* | suse | tumbleweed)
+      # SMM, non-SecureBoot variant — best for NixOS
+      code="/usr/share/qemu/ovmf-x86_64-smm-5m-code.bin"
+      vars="/usr/share/qemu/ovmf-x86_64-smm-vars.bin"
+      ;;
+    *)
+      echo "❌ Unknown or unsupported distro: $ID" >&2
+      exit 1
+      ;;
+    esac
+  else
+    echo "❌ Cannot detect host OS." >&2
+    exit 1
+  fi
+  echo "$code|$vars"
+}
+
+IFS="|" read -r OVMF_CODE OVMF_VARS < <(get_uefi_paths)
+
+# NEED THIS?
+# DISK_PATH="/var/lib/libvirt/images/${VM_NAME}.qcow2"
+# NVRAM_PATH="/var/lib/libvirt/qemu/nvram/${VM_NAME}_VARS.fd"
+# # Copy and prepare NVRAM for the VM
+# sudo mkdir -p "$(dirname "$NVRAM_PATH")"
+# sudo cp "$OVMF_VARS" "$NVRAM_PATH"
+# sudo chown libvirt-qemu:kvm "$NVRAM_PATH"
+# sudo chmod 644 "$NVRAM_PATH"
+
 create_vm() {
   if virsh list --all | grep -q nixvm; then
     echo "VM already exists"
@@ -28,6 +75,9 @@ create_vm() {
 
   echo "Creating VM"
   virt-install \
+    --cpu host \
+    --machine q35 \
+    --disk path="$DISK_PATH",size="$DISK_SIZE",format=qcow2 \
     --name nixvm \
     --memory 8192 \
     --vcpus 4 \
@@ -36,7 +86,10 @@ create_vm() {
     --network network=default \
     --os-variant nixos-unstable \
     --graphics spice \
-    --boot uefi
+    --boot loader="$OVMF_CODE" \
+    --nvram "$OVMF_VARS"
+
+  # Tested below to work on fedora
   # --boot loader=/usr/share/OVMF/OVMF_CODE.fd,loader_ro=yes,loader_type=pflash,nvram_template=/usr/share/OVMF/OVMF_VARS.fd
 }
 
@@ -49,15 +102,12 @@ get_ip() {
 }
 
 main() {
-
   download_iso
-  create_disk
   create_vm
   eject_iso
 
   echo "VM created. You can now ssh to it with the following command:"
   echo "ssh root@$(get_ip)"
-
 }
 
 main

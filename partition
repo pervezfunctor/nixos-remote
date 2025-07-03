@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  echo "Usage: $0 --disk /dev/vda --swap-size 4G"
+  exit 1
+}
+
+DISK=${1:-/dev/vda}
+EFI_PART="${DISK}1"
+SWAP_PART="${DISK}2"
+ROOT_PART="${DISK}3"
+
+parse_args() {
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+    --disk)
+      DISK=$2
+      shift 2
+      ;;
+    --swap-size)
+      SWAP_SIZE=$2
+      shift 2
+      ;;
+    *)
+      echo "Unknown option: $1"
+      usage
+      ;;
+    esac
+  done
+}
+
+create_partitions() {
+  echo "--> Wiping and partitioning ${DISK}"
+  sleep 2
+  sgdisk --zap-all "${DISK}"
+  sgdisk -n 1:0:+1G -t 1:ef00 -c 1:efiboot "${DISK}"
+  sgdisk -n 2:0:+"${SWAP_SIZE}" -t 2:8200 -c 2:swap "${DISK}"
+  sgdisk -n 3:0:0 -t 3:8300 -c 3:root "${DISK}"
+  sync && udevadm settle
+}
+
+format_partitions() {
+  echo "--> Formatting partitions"
+  mkfs.vfat -n BOOT -F32 "${EFI_PART}"
+  mkswap -L swap "${SWAP_PART}"
+  mkfs.btrfs -f -L root "${ROOT_PART}"
+}
+
+mount_partitions() {
+  echo "--> Mounting filesystems"
+  mount "${ROOT_PART}" /mnt
+  mkdir -p /mnt/boot
+  mount -o umask=0077 "${EFI_PART}" /mnt/boot
+  swapon "${SWAP_PART}"
+}
+
+main() {
+  parse_args "$@"
+  create_partitions
+  format_partitions
+  mount_partitions
+
+  echo "--> Disk layout:"
+  lsblk -o NAME,SIZE,TYPE,MOUNTPOINTS "${DISK}"
+}

@@ -47,16 +47,16 @@
   time.timeZone = "Etc/UTC";
   i18n.defaultLocale = "en_US.UTF-8";
 
-  users.users.pervez = {
+  users.users.me = {
     isNormalUser = true;
     createHome = true;
     extraGroups = [ "wheel" "networkmanager" ];
     openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIcXIDK5n+AIXExMo9nt1PRGcowyvyZUPvhBGRJRGMAl pervez@fedora"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIcXIDK5n+AIXExMo9nt1PRGcowyvyZUPvhBGRJRGMAl me@fedora"
     ];
   };
   users.users.root.openssh.authorizedKeys.keys =
-    config.users.users.pervez.openssh.authorizedKeys.keys;
+    config.users.users.me.openssh.authorizedKeys.keys;
   services.openssh = {
     enable = true;
     settings = {
@@ -66,34 +66,42 @@
   };
 
   environment.systemPackages = with pkgs; [
-    openssh
-    vim
-    git
     bash
-    zsh
-    wget
-    curl
+    bat
     coreutils
-    gnugrep
-    gawk
-    sed
+    curl
     cut
-    unzip
-    xz
+    delta
+    eza
+    fzf
+    gawk
     gcc
-    glibc
-    gnumake
-    git
     gh
+    git
+    glibc
+    gnugrep
+    gnumake
+    htop
     micro-with-wl-clipboard
-    nixfmt-classic
     nixd
-    statix
+    nixfmt-classic
+    openssh
+    ripgrep
+    sed
     starship
+    statix
     stow
+    tar
+    tmux
     tmux
     trash-cli
     tree
+    unzip
+    vim
+    wget
+    xz
+    zoxide
+    zsh
   ];
   system.stateVersion = "25.05";
 }

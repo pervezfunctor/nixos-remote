@@ -1,17 +1,34 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [ "$(id -u)" -ne 0 ]; then
+  echo "❌ This script must be run as root" >&2
+  exit 1
+fi
+
+# @TODO: Only copy configuration.nix and flake.nix instead?
 clone_config() {
+  if [ ! -d /mnt ]; then
+    echo "❌ /mnt does not exist" >&2
+    exit 1
+  fi
   echo "--> Installing NixOS from flake"
-  git clone https://github.com/pervezfunctor/nixos-remote.git /mnt/etc/nixos
+  git clone https://github.com/mefunctor/nixos-remote.git /mnt/etc/nixos
+}
+
+setup_ssh_key() {
+  [ ! -d /mnt/etc/ssh ] && mkdir -p /mnt/etc/ssh
+
+  if [ ! -f /mnt/etc/ssh/ssh_host_ed25519_key ]; then
+    ssh-keygen -t ed25519 -f /mnt/etc/ssh/ssh_host_ed25519_key -N ""
+  fi
+
+  chmod 600 /mnt/etc/ssh/ssh_host_ed25519_key
 }
 
 install_nixos() {
-  mkdir -p /mnt/etc/ssh
-  ssh-keygen -t ed25519 -f /mnt/etc/ssh/ssh_host_ed25519_key -N ""
-  chmod 600 /mnt/etc/ssh/ssh_host_ed25519_key
   nixos-install --root /mnt --no-root-passwd --flake /mnt/etc/nixos#ilm
-  nixos-enter --root /mnt -c 'passwd pervez'
+  nixos-enter --root /mnt -c 'passwd me'
 }
 
 cleanup() {
@@ -25,6 +42,7 @@ cleanup() {
 
 main() {
   clone_config
+  setup_ssh_key
   install_nixos
   cleanup
 }
