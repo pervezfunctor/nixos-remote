@@ -8,7 +8,7 @@
   };
 
   outputs = { self, nixpkgs, home-manager, ... }@inputs:
-    let system = "x86_64-linux"; # or "aarch64-linux"
+    let system = "x86_64-linux";
     in {
       homeConfigurations.me = home-manager.lib.homeManagerConfiguration {
         inherit system;

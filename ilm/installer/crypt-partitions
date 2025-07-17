@@ -79,7 +79,7 @@ create_partitions() {
 setup_luks() {
   info "Setting up LUKS on ${LUKS_PARTITION}..."
   cryptsetup -c aes-xts-plain64 -s 512 -h sha512 -i 2000 --use-random \
-    --label=LUKS luksFormat --type luks2 "${LUKS_PARTITION}"
+    --label=cryptroot luksFormat --type luks2 "${LUKS_PARTITION}"
 
   info "Opening LUKS container..."
   cryptsetup open --type luks "${LUKS_PARTITION}" cryptroot
@@ -95,17 +95,34 @@ setup_lvm() {
 
 format_filesystems() {
   info "Formatting filesystems..."
-  mkfs.vfat -n BOOT -F32 "${EFI_PARTITION}"
-  mkfs.ext4 -L root /dev/mapper/nixos-root
+  mkfs.vfat -n efiboot -F32 "${EFI_PARTITION}"
   mkswap -L swap /dev/mapper/nixos-swap
+
+  info "Creating Btrfs filesystem on /dev/mapper/nixos-root..."
+  mkfs.btrfs -f -L root /dev/mapper/nixos-root
+
+  info "Creating Btrfs subvolumes..."
+  mount /dev/mapper/nixos-root /mnt
+  btrfs subvolume create /mnt/@
+  btrfs subvolume create /mnt/@nix
+  btrfs subvolume create /mnt/@home
+  btrfs subvolume create /mnt/@log
+  btrfs subvolume create /mnt/@snapshots
+  umount /mnt
 }
 
 mount_filesystems() {
   info "Mounting filesystems..."
-  mount /dev/mapper/nixos-root /mnt
-  mkdir -p /mnt/boot
-  mount -o umask=0077 "${EFI_PARTITION}" /mnt/boot
-  swapon /dev/mapper/nixos-swap
+  mount -o subvol=@,compress=zstd,noatime /dev/disk/by-label/root /mnt
+  mkdir -p /mnt/{boot,nix,home,var/log,snapshots}
+
+  mount -o subvol=@nix,compress=zstd,noatime /dev/disk/by-label/root /mnt/nix
+  mount -o subvol=@home,compress=zstd,noatime /dev/disk/by-label/root /mnt/home
+  mount -o subvol=@log,compress=zstd,noatime /dev/disk/by-label/root /mnt/var/log
+  mount -o subvol=@snapshots,compress=zstd,noatime /dev/disk/by-label/root /mnt/snapshots
+
+  mount -t vfat -o fmask=0077,dmask=0077 /dev/disk/by-label/efiboot /mnt/boot
+  swapon /dev/disk/by-label/swap
 }
 
 main() {
