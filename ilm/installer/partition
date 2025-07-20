@@ -78,10 +78,10 @@ parse_args() {
 create_partitions() {
   info "Creating GPT partitions on ${DISK}..."
 
+  blkdiscard "${DISK}"
   sgdisk --zap-all "${DISK}"
   dd if=/dev/zero of="${DISK}" bs=1M count=10
   dd if=/dev/zero of="${DISK}" bs=1M seek=$(($(blockdev --getsz "${DISK}") / 2048 - 10)) count=10
-
   sgdisk -n 1:0:+1G -t 1:ef00 -c 1:"efiboot" "${DISK}"          # EFI
   sgdisk -n 2:0:+"${SWAP_SIZE}" -t 2:8200 -c 2:"swap" "${DISK}" # swap
   sgdisk -n 3:0:0 -t 3:8300 -c 3:"root" "${DISK}"               # root
