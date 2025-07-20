@@ -15,9 +15,19 @@
         modules = [ ./configuration.nix ./ui.nix ./gnome.nix ];
       };
 
+      nixosConfigurations.kde = nixpkgs.lib.nixosSystem {
+        inherit system;
+        modules = [ ./configuration.nix ./ui.nix ./kde.nix ];
+      };
+
       nixosConfigurations.gnome-vm = nixpkgs.lib.nixosSystem {
         inherit system;
         modules = [ ./configuration.nix ./ui.nix ./gnome.nix ./vm.nix ];
+      };
+
+      nixosConfigurations.kde-vm = nixpkgs.lib.nixosSystem {
+        inherit system;
+        modules = [ ./configuration.nix ./ui.nix ./kde.nix ./vm.nix ];
       };
 
       nixosConfigurations.sway = nixpkgs.lib.nixosSystem {

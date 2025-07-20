@@ -4,7 +4,7 @@ This directory contains additional configurations and scripts that you might fin
 
 ## VM
 
-The `vm` directory contains a NixOS configuration for a basic VM. It includes a basic NixOS configuration with a few useful packages.
+The `vms` directory contains a NixOS configuration for a basic VM. It includes a basic NixOS configuration with a few useful packages.
 
 To build the VM image, run the following command:
 

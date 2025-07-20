@@ -12,7 +12,7 @@ error() {
 }
 
 usage() {
-  printf "Usage: %s <server|gnome|sway|gnome-vm|sway-vm>\n" "$0" >&2
+  printf "Usage: %s <server|gnome|kde|sway|gnome-vm|kde-vm|sway-vm>\n" "$0" >&2
   exit 1
 }
 
@@ -97,7 +97,7 @@ main() {
 
   local config="$1"
   case "$config" in
-  server | gnome | sway | gnome-vm | sway-vm)
+  server | gnome | kde | sway | gnome-vm | kde-vm | sway-vm)
     info "Using configuration: '$config'"
     ;;
   *)

@@ -2,7 +2,7 @@
   description = "ILM home-manager flake";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    inputs = { nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable"; };
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
   };

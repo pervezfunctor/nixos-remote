@@ -65,8 +65,10 @@ This repository provides a set of scripts to install NixOS on a remote machine.
 
     *   `server`: A basic server installation.
     *   `gnome`: A desktop installation with the GNOME desktop environment.
+    *   `kde`: A desktop installation with the KDE Plasma desktop environment.
     *   `sway`: A desktop installation with the Sway tiling window manager.
     *   `gnome-vm`: A GNOME desktop installation for a virtual machine.
+    *   `kde-vm`: A KDE Plasma installation for a virtual machine.
     *   `sway-vm`: A Sway installation for a virtual machine.
 
     To install, run the following command:
