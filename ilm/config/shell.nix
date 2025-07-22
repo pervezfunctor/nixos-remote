@@ -1,5 +1,5 @@
 { config, pkgs, ... }: {
-  users.users.me = { shell = pkgs.nushell; };
+  programs.zsh.enable = true;
 
   environment.systemPackages = with pkgs; [
     bash
@@ -18,6 +18,8 @@
     nixfmt-classic
     nushell
     statix
+    shellcheck
+    shfmt
     stow
     tmux
     trash-cli
@@ -27,5 +29,6 @@
     wget
     xz
     zsh
+    ripgrep
   ];
 }

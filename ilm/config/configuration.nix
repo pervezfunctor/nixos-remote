@@ -1,11 +1,12 @@
 { config, pkgs, ... }: {
   imports = [
-    ./hardware-configuration.nix
     ./common.nix
     ./fs.nix
     ./shell.nix
     ./user.nix
-    # ./virt.nix
+    ./dev.nix
+    ./apps.nix
+    ./virt.nix
     # ./initrd-crypt.nix
     # ./tailscale.nix
   ];

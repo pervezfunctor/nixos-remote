@@ -1,6 +1,7 @@
 { config, pkgs, ... }: {
   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.systemd-boot.enable = true;
+  boot.extraModprobeConfig = "options kvm_intel nested=1";
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
   console = {
@@ -20,4 +21,5 @@
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
   nixpkgs.config.allowUnfree = true;
+
 }

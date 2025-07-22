@@ -1,8 +1,9 @@
 { config, pkgs, ... }: {
   users.users.me = {
+    shell = pkgs.zsh;
     isNormalUser = true;
     createHome = true;
-    extraGroups = [ "wheel" ];
+    extraGroups = [ "wheel" "video" ];
     initialPassword = "nixos";
 
     openssh.authorizedKeys.keys = [

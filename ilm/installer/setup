@@ -1,0 +1,238 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+info() {
+  printf -- "--> %s\n" "$1"
+}
+
+fail() {
+  printf -- "❌ ERROR: %s\n" "$1" >&2
+}
+
+error() {
+  fail "$1"
+  exit 1
+}
+
+usage() {
+printf "Usage: %s --disk <device> [--swap-size SIZE] --profile <profile>\n" "$0" >&2
+printf "  <device>     e.g. /dev/vda, /dev/sda\n" >&2
+printf "  <profile>    server | gnome | kde | sway | gnome-vm | kde-vm | sway-vm\n" >&2
+  exit 1
+}
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+CONFIG_SRC_DIR="$(realpath "${SCRIPT_DIR}/../config")"
+DISK=""
+
+SWAP_SIZE="4G"
+
+EFI_PARTITION=""
+SWAP_PARTITION=""
+ROOT_PARTITION=""
+
+get_partition_path() {
+  local disk="$1"
+  local number="$2"
+  if [[ "$disk" =~ [0-9]$ ]]; then
+    printf -- "%sp%s" "$disk" "$number"
+  else
+    printf -- "%s%s" "$disk" "$number"
+  fi
+}
+
+parse_args() {
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+    --disk)
+      DISK="$2"
+      shift 2
+      ;;
+    --swap-size)
+      SWAP_SIZE="$2"
+      shift 2
+      ;;
+    *)
+      fail "Unknown option: $1"
+      usage
+      ;;
+    esac
+  done
+
+  if [[ -z "$DISK" ]]; then
+    error "Missing required --disk argument."
+  fi
+
+  if ! [[ "$DISK" =~ ^/dev/(vd|sd|nvme)[a-z0-9]+$ ]]; then
+    error "Invalid disk name: '$DISK'. Expected a path like /dev/vda or /dev/nvme0n1."
+  fi
+
+  if ! [ -b "${DISK}" ]; then
+    error "Disk '$DISK' is not a block device or does not exist."
+  fi
+
+  info "Wiping and partitioning ${DISK} in 5 seconds. Press Ctrl+C to cancel."
+  sleep 5
+
+  EFI_PARTITION=$(get_partition_path "$DISK" 1)
+  SWAP_PARTITION=$(get_partition_path "$DISK" 2)
+  ROOT_PARTITION=$(get_partition_path "$DISK" 3)
+}
+
+create_partitions() {
+  info "Creating GPT partitions on ${DISK}..."
+
+  blkdiscard "${DISK}"
+  sgdisk --zap-all "${DISK}"
+  dd if=/dev/zero of="${DISK}" bs=1M count=10
+  dd if=/dev/zero of="${DISK}" bs=1M seek=$(($(blockdev --getsz "${DISK}") / 2048 - 10)) count=10
+  sgdisk -n 1:0:+1G -t 1:ef00 -c 1:"efiboot" "${DISK}"          # EFI
+  sgdisk -n 2:0:+"${SWAP_SIZE}" -t 2:8200 -c 2:"swap" "${DISK}" # swap
+  sgdisk -n 3:0:0 -t 3:8300 -c 3:"root" "${DISK}"               # root
+
+  sync
+  udevadm settle
+  partprobe "${DISK}"
+}
+
+format_partitions() {
+  info "Formatting partitions..."
+
+  mkfs.vfat -n "efiboot" -F 32 -- "${EFI_PARTITION}"
+  mkswap -f -L "swap" -- "${SWAP_PARTITION}"
+
+  mkfs.btrfs -f -L "root" -- "${ROOT_PARTITION}"
+
+  info "Creating Btrfs subvolumes..."
+  mount "${ROOT_PARTITION}" /mnt
+
+  btrfs subvolume create /mnt/@
+  btrfs subvolume create /mnt/@nix
+  btrfs subvolume create /mnt/@home
+  btrfs subvolume create /mnt/@log
+  btrfs subvolume create /mnt/@snapshots
+
+  umount /mnt
+}
+
+mount_partitions() {
+  info "Mounting filesystems..."
+
+  mount -o subvol=@,compress=zstd,noatime "${ROOT_PARTITION}" /mnt
+  mkdir -p /mnt/{boot,nix,home,var/log,snapshots}
+
+  mount -o subvol=@nix,compress=zstd,noatime "${ROOT_PARTITION}" /mnt/nix
+  mount -o subvol=@home,compress=zstd,noatime "${ROOT_PARTITION}" /mnt/home
+  mount -o subvol=@log,compress=zstd,noatime "${ROOT_PARTITION}" /mnt/var/log
+  mount -o subvol=@snapshots,compress=zstd,noatime "${ROOT_PARTITION}" /mnt/snapshots
+
+  mount -t vfat -o umask=0077 /dev/disk/by-label/efiboot /mnt/boot
+  swapon /dev/disk/by-label/swap
+}
+
+main() {
+  parse_args "$@"
+  create_partitions
+  format_partitions
+  mount_partitions
+
+  info "Disk layout complete:"
+  lsblk -o NAME,SIZE,TYPE,FSTYPE,LABEL,MOUNTPOINTS "${DISK}"
+}
+
+
+setup_config() {
+  info "Generating NixOS configuration..."
+
+  local temp_dir
+  temp_dir="$(mktemp -d -t nixos-config.XXXXXX)"
+
+  temp_dir_cleanup() {
+    rm -rf -- "$temp_dir"
+  }
+  trap temp_dir_cleanup EXIT
+
+  if ! nixos-generate-config --root "$temp_dir"; then
+    echo "❌ Failed to generate NixOS config" >&2
+    return 1
+  fi
+
+  info "Preparing /mnt/etc/nixos..."
+  mkdir -p /mnt/etc/nixos
+
+  local hw_config="$temp_dir/etc/nixos/hardware-configuration.nix"
+  if [[ -f "$hw_config" ]]; then
+    cp -- "$hw_config" /mnt/etc/nixos/
+  else
+    echo "⚠️ hardware-configuration.nix not found in generated output." >&2
+  fi
+
+  info "Copying custom config from $CONFIG_SRC_DIR..."
+  cp -r -- "${CONFIG_SRC_DIR}/." /mnt/etc/nixos/
+}
+
+setup_ssh_key() {
+  info "Setting up SSH host key..."
+  mkdir -p /mnt/etc/ssh
+
+  if [ ! -f /mnt/etc/ssh/ssh_host_ed25519_key ]; then
+    info "No SSH host key found. Generating a new one."
+    ssh-keygen -t ed25519 -f /mnt/etc/ssh/ssh_host_ed25519_key -N ""
+  fi
+
+  chmod 600 /mnt/etc/ssh/ssh_host_ed25519_key
+}
+
+install_nixos() {
+  local config_name="$1"
+  info "Installing NixOS with flake config: '${config_name}'"
+  nixos-install --root /mnt --no-root-passwd --flake "/mnt/etc/nixos#${config_name}"
+
+  info "Please set the password for user 'me'"
+  nixos-enter --root /mnt -c 'passwd me'
+}
+
+install_cleanup() {
+  info "--- Installation Complete ---"
+  umount -R /mnt
+
+  if swapon --summary | grep -q "/dev/mapper/nixos-swap"; then
+    swapoff /dev/mapper/nixos-swap
+    echo "✅ swapoff successful: /dev/mapper/nixos-swap"
+  else
+    echo "ℹ️  Swap not active or not found: /dev/mapper/nixos-swap"
+  fi
+
+  vgchange -a n nixos
+  cryptsetup close /dev/mapper/cryptroot
+  info "--- You can now reboot. ---"
+}
+
+main() {
+  if [ "$(id -u)" -ne 0 ]; then
+    error "This script must be run as root."
+  fi
+
+  if [ $# -ne 1 ]; then
+    usage
+  fi
+
+  local config="$1"
+  case "$config" in
+  server | gnome | kde | sway | gnome-vm | kde-vm | sway-vm)
+    info "Using configuration: '$config'"
+    ;;
+  *)
+    printf "❌ ERROR: Invalid configuration '%s'\n" "$config" >&2
+    usage
+    ;;
+  esac
+
+  setup_config
+  setup_ssh_key
+  install_nixos "$config"
+  install_cleanup
+}
+
+main "$@"
