@@ -12,6 +12,7 @@
     '';
 
     extraPackages = with pkgs; [
+      swaylock
       libsecret
       rofi-wayland
       swaynotificationcenter
