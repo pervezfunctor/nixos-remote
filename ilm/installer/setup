@@ -2,9 +2,6 @@
 
 set -euo pipefail
 
-touch /var/log/nixos-install.log || echo "⚠️  Cannot write to /var/log/nixos-install.log"
-exec > >(awk '{ print strftime("[%F %T]"), $0; fflush() }' | tee -a /var/log/nixos-install.log) 2>&1
-
 info() {
   printf -- "--> %s\n" "$1"
 }
@@ -18,8 +15,11 @@ error() {
   exit 1
 }
 
+touch /var/log/nixos-install.log || error "Cannot write to /var/log/nixos-install.log"
+exec > >(awk '{ print strftime("[%F %T]"), $0; fflush() }' | tee -a /var/log/nixos-install.log) 2>&1
+
 usage() {
-  printf "Usage: %s --disk <device> [--swap-size SIZE] --profile <profile> --hostname <hostname>\n" "$0" >&2
+  printf "Usage: %s --disk <device> [--swap-size SIZE] --profile <profile> --hostname [hostname]\n" "$0" >&2
   printf "  <device>     e.g. /dev/vda, /dev/sda\n" >&2
   printf "  <profile>    server | gnome | kde | sway | gnome-vm | kde-vm | sway-vm\n" >&2
   printf "  <hostname>   The hostname to set for the system\n" >&2
@@ -61,7 +61,7 @@ parse_args() {
       shift 2
       ;;
     --hostname)
-      HOSTNAME="$2"
+      HOSTNAME="${2:-$CONFIG}"
       shift 2
       ;;
     --help | -h)
@@ -94,10 +94,6 @@ parse_args() {
 
   if ! [[ "$CONFIG" =~ ^(server|gnome|kde|sway|gnome-vm|kde-vm|sway-vm)$ ]]; then
     error "Invalid profile: '$CONFIG'. Expected one of: server, gnome, kde, sway, gnome-vm, kde-vm, sway-vm."
-  fi
-
-  if [[ -z "${HOSTNAME:-}" ]]; then
-    HOSTNAME="$CONFIG"
   fi
 
   if ! [[ "$HOSTNAME" =~ ^[a-zA-Z0-9][-a-zA-Z0-9]*$ ]]; then
