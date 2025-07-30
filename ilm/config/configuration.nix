@@ -1,7 +1,6 @@
 { ... }: {
   imports = [
     ./common.nix
-    ./hosts/7945hx/fs.nix
     ./shell.nix
     ./user.nix
     ./dev.nix

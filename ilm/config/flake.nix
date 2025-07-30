@@ -42,6 +42,7 @@
         inherit system;
         modules = [
           ./hosts/um580/hardware-configuration.nix
+          ./hosts/um580/fs.nix
           ./configuration.nix
           ./ui.nix
           ./sway.nix
@@ -53,6 +54,7 @@
         inherit system;
         modules = [
           ./hosts/7945hx/hardware-configuration.nix
+          ./hosts/7945hx/fs.nix
           ./configuration.nix
           ./ui.nix
           ./sway.nix
