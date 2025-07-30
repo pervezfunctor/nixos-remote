@@ -1,1 +1,4 @@
-{ }: { hostName = "7945hx"; }
+{ }:
+{
+  hostName = "7945hx";
+}

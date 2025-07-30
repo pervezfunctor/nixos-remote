@@ -1,39 +1,63 @@
-{ ... }: {
+{ ... }:
+{
   fileSystems."/" = {
     device = "/dev/disk/by-label/ROOT";
     fsType = "btrfs";
-    options = [ "subvol=@" "compress=zstd" "noatime" ];
+    options = [
+      "subvol=@"
+      "compress=zstd"
+      "noatime"
+    ];
   };
 
   fileSystems."/nix" = {
     device = "/dev/disk/by-label/ROOT";
     fsType = "btrfs";
-    options = [ "subvol=@nix" "compress=zstd" "noatime" ];
+    options = [
+      "subvol=@nix"
+      "compress=zstd"
+      "noatime"
+    ];
   };
 
   fileSystems."/home" = {
     device = "/dev/disk/by-label/ROOT";
     fsType = "btrfs";
-    options = [ "subvol=@home" "compress=zstd" "noatime" ];
+    options = [
+      "subvol=@home"
+      "compress=zstd"
+      "noatime"
+    ];
   };
 
   fileSystems."/var/log" = {
     device = "/dev/disk/by-label/ROOT";
     fsType = "btrfs";
-    options = [ "subvol=@log" "compress=zstd" "noatime" ];
+    options = [
+      "subvol=@log"
+      "compress=zstd"
+      "noatime"
+    ];
   };
 
   fileSystems."/snapshots" = {
     device = "/dev/disk/by-label/ROOT";
     fsType = "btrfs";
-    options = [ "subvol=@snapshots" "compress=zstd" "noatime" ];
+    options = [
+      "subvol=@snapshots"
+      "compress=zstd"
+      "noatime"
+    ];
   };
 
   fileSystems."/boot" = {
     device = "/dev/disk/by-label/EFI";
     fsType = "vfat";
-    options = [ "fmask=0077" "dmask=0077" ];
+    options = [
+      "fmask=0077"
+      "dmask=0077"
+    ];
   };
 
-  swapDevices = [{ device = "/dev/disk/by-label/SWAP"; }];
+  swapDevices = [ { device = "/dev/disk/by-label/SWAP"; } ];
 }

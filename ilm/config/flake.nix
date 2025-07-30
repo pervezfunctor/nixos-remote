@@ -5,37 +5,65 @@
     agenix.url = "github:ryantm/agenix";
   };
 
-  outputs = { nixpkgs, agenix, ... }:
-    let system = "x86_64-linux";
-    in {
+  outputs =
+    { nixpkgs, agenix, ... }:
+    let
+      system = "x86_64-linux";
+    in
+    {
       nixosConfigurations.server = nixpkgs.lib.nixosSystem {
         inherit system;
-        modules = [ ./configuration.nix ./ssh.nix ];
+        modules = [
+          ./configuration.nix
+          ./ssh.nix
+        ];
       };
 
       nixosConfigurations.gnome = nixpkgs.lib.nixosSystem {
         inherit system;
-        modules = [ ./configuration.nix ./ui.nix ./gnome.nix ];
+        modules = [
+          ./configuration.nix
+          ./ui.nix
+          ./gnome.nix
+        ];
       };
 
       nixosConfigurations.kde = nixpkgs.lib.nixosSystem {
         inherit system;
-        modules = [ ./configuration.nix ./ui.nix ./kde.nix ];
+        modules = [
+          ./configuration.nix
+          ./ui.nix
+          ./kde.nix
+        ];
       };
 
       nixosConfigurations.gnome-vm = nixpkgs.lib.nixosSystem {
         inherit system;
-        modules = [ ./configuration.nix ./ui.nix ./gnome.nix ./vm.nix ];
+        modules = [
+          ./configuration.nix
+          ./ui.nix
+          ./gnome.nix
+          ./vm.nix
+        ];
       };
 
       nixosConfigurations.kde-vm = nixpkgs.lib.nixosSystem {
         inherit system;
-        modules = [ ./configuration.nix ./ui.nix ./kde.nix ./vm.nix ];
+        modules = [
+          ./configuration.nix
+          ./ui.nix
+          ./kde.nix
+          ./vm.nix
+        ];
       };
 
       nixosConfigurations.sway = nixpkgs.lib.nixosSystem {
         inherit system;
-        modules = [ ./configuration.nix ./ui.nix ./sway.nix ];
+        modules = [
+          ./configuration.nix
+          ./ui.nix
+          ./sway.nix
+        ];
       };
 
       nixosConfigurations.um580 = nixpkgs.lib.nixosSystem {
@@ -57,14 +85,19 @@
           ./hosts/7945hx/fs.nix
           ./configuration.nix
           ./ui.nix
-          ./sway.nix
+          ./gnome.nix
           agenix.nixosModules.default
         ];
       };
 
       nixosConfigurations.sway-vm = nixpkgs.lib.nixosSystem {
         inherit system;
-        modules = [ ./configuration.nix ./ui.nix ./sway.nix ./vm.nix ];
+        modules = [
+          ./configuration.nix
+          ./ui.nix
+          ./sway.nix
+          ./vm.nix
+        ];
       };
 
       nixosConfigurations.vm = nixpkgs.lib.nixosSystem {
@@ -73,9 +106,12 @@
           ./configuration.nix
           ./vm.nix
           ./ssh.nix
-          ({ pkgs, ... }: {
-            environment.systemPackages = with pkgs; [ spice-vdagent ];
-          })
+          (
+            { pkgs, ... }:
+            {
+              environment.systemPackages = with pkgs; [ spice-vdagent ];
+            }
+          )
         ];
       };
     };

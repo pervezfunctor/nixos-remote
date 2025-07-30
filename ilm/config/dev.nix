@@ -1,4 +1,5 @@
-{ config, pkgs, ... }: {
+{ pkgs, ... }:
+{
   environment.sessionVariables = {
     # Force Electron to use Wayland + fix fractional scaling
     NIXOS_OZONE_WL = "1";
@@ -27,5 +28,9 @@
     };
   };
 
-  environment.systemPackages = with pkgs; [ vscode ghostty ptyxis ];
+  environment.systemPackages = with pkgs; [
+    vscode
+    ghostty
+    ptyxis
+  ];
 }

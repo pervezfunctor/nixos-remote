@@ -1,4 +1,5 @@
-{ config, pkgs, ... }: {
+{ pkgs, ... }:
+{
   virtualisation.docker.enable = true;
 
   virtualisation = {
@@ -55,11 +56,22 @@
 
   networking.nftables.enable = true;
   # networking.firewall.trustedInterfaces = [ "incusbr0" ];
-  networking.firewall.interfaces.incusbr0.allowedTCPPorts = [ 53 67 ];
-  networking.firewall.interfaces.incusbr0.allowedUDPPorts = [ 53 67 ];
+  networking.firewall.interfaces.incusbr0.allowedTCPPorts = [
+    53
+    67
+  ];
+  networking.firewall.interfaces.incusbr0.allowedUDPPorts = [
+    53
+    67
+  ];
 
-  users.users.me.extraGroups =
-    [ "kvm" "libvirt" "incus" "incus-admin" "docker" ];
+  users.users.me.extraGroups = [
+    "kvm"
+    "libvirt"
+    "incus"
+    "incus-admin"
+    "docker"
+  ];
 
   environment.systemPackages = with pkgs; [
     virt-manager

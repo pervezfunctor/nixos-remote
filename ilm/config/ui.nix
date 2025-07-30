@@ -1,4 +1,5 @@
-{ config, pkgs, ... }: {
+{ pkgs, ... }:
+{
 
   security.polkit.enable = true;
 
@@ -15,12 +16,11 @@
 
   xdg.portal = {
     enable = true;
-    extraPortals = with pkgs;
-      [
-        # xdg-desktop-portal-gtk  # For GTK environments
-        # xdg-desktop-portal-kde  # Uncomment if using Plasma
-        xdg-desktop-portal-wlr # Uncomment if using Wayland compositor like Sway/Hyprland
-      ];
+    extraPortals = with pkgs; [
+      # xdg-desktop-portal-gtk  # For GTK environments
+      # xdg-desktop-portal-kde  # Uncomment if using Plasma
+      xdg-desktop-portal-wlr # Uncomment if using Wayland compositor like Sway/Hyprland
+    ];
     config.common.default = "*";
   };
 

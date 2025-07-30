@@ -1,4 +1,5 @@
-{ pkgs, ... }: {
+{ pkgs, ... }:
+{
   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.systemd-boot.enable = true;
   boot.extraModprobeConfig = "options kvm_intel nested=1";
@@ -19,7 +20,10 @@
   time.timeZone = "Asia/Kolkata";
   i18n.defaultLocale = "en_US.UTF-8";
 
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.settings.experimental-features = [
+    "nix-command"
+    "flakes"
+  ];
   nixpkgs.config.allowUnfree = true;
 
 }
