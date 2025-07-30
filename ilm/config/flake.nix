@@ -2,10 +2,10 @@
   description = "ILM NixOS configuration";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-      agenix.url = "github:ryantm/agenix";
-    };
+    agenix.url = "github:ryantm/agenix";
+  };
 
-  outputs = { self, nixpkgs, agenix, ... }:
+  outputs = { nixpkgs, agenix, ... }:
     let system = "x86_64-linux";
     in {
       nixosConfigurations.server = nixpkgs.lib.nixosSystem {
@@ -15,7 +15,7 @@
 
       nixosConfigurations.gnome = nixpkgs.lib.nixosSystem {
         inherit system;
-        modules = [ ./configuration.nix ./ui.nix ./gnome.nix  ];
+        modules = [ ./configuration.nix ./ui.nix ./gnome.nix ];
       };
 
       nixosConfigurations.kde = nixpkgs.lib.nixosSystem {
@@ -49,7 +49,18 @@
         ];
       };
 
-     nixosConfigurations.sway-vm = nixpkgs.lib.nixosSystem {
+      nixosConfigurations."7945hx" = nixpkgs.lib.nixosSystem {
+        inherit system;
+        modules = [
+          ./hosts/7945hx/hardware-configuration.nix
+          ./configuration.nix
+          ./ui.nix
+          ./sway.nix
+          agenix.nixosModules.default
+        ];
+      };
+
+      nixosConfigurations.sway-vm = nixpkgs.lib.nixosSystem {
         inherit system;
         modules = [ ./configuration.nix ./ui.nix ./sway.nix ./vm.nix ];
       };

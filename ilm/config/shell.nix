@@ -1,7 +1,8 @@
-{ config, pkgs, ... }: {
+{ pkgs, ... }: {
   programs.zsh.enable = true;
 
   environment.systemPackages = with pkgs; [
+    alejandra
     bash
     coreutils
     curl
@@ -14,12 +15,14 @@
     gnumake
     htop
     micro-with-wl-clipboard
+    nil
     nixd
-    nixfmt-classic
+    nixfmt
     nushell
-    statix
+    ripgrep
     shellcheck
     shfmt
+    statix
     stow
     tmux
     trash-cli
@@ -29,6 +32,5 @@
     wget
     xz
     zsh
-    ripgrep
   ];
 }

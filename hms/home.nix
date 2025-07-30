@@ -57,19 +57,24 @@
 
   home.packages = with pkgs; [
     bat
+    carapace
     delta
+    emacs-nox
     eza
     fd
     fzf
+    just
+    lazygit
+    luarocks
     neovim
+    nixpkgs-fmt
     nodejs
     ripgrep
-    starship
     sd
+    starship
     tealdeer
-    nushell
+    unzip
     yazi
     zoxide
-    zsh
   ];
 }

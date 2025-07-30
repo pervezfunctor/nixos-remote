@@ -1,7 +1,7 @@
-{ config, pkgs, ... }: {
+{ ... }: {
   imports = [
     ./common.nix
-    ./fs.nix
+    ./hosts/7945hx/fs.nix
     ./shell.nix
     ./user.nix
     ./dev.nix
@@ -10,6 +10,9 @@
     # ./initrd-crypt.nix
     # ./tailscale.nix
   ];
+
+  # @TODO: This will be your hostname, so change this
+  networking.hostName = "7945hx";
 
   # # Enable mDNS for `hostname.local` addresses
   # services.avahi.enable = true;
